@@ -68,14 +68,16 @@ sudo pacman -S --needed pkgconf glib2
 
 ```bash
 npm install
-npm run dev
+npm run tauri dev
 ```
 
-In another terminal:
+`npm run tauri dev` already starts the Vite dev server via Tauri `beforeDevCommand`.
+Do not run `npm run dev` in a separate terminal at the same time, or port `1420` will conflict.
+
+If you only want to run the frontend (without Tauri), use:
 
 ```bash
-# Run from project root (not src-tauri/)
-npm run tauri dev
+npm run dev
 ```
 
 ## Packaging notes
