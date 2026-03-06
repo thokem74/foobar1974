@@ -1,11 +1,11 @@
 # foobar1974
 
-A foobar2000-inspired Linux music player built with **Tauri + Rust + React (TypeScript)**.
+A foobar2000-inspired Linux music player built with **GTK4 + Rust**.
 
 ## Stack
 
-- Frontend: React + TypeScript + `react-virtuoso`
-- Backend: Rust + Tauri commands/events
+- UI: GTK4 (native Rust)
+- Backend: Rust modules (DB/library/player state)
 - Playback: `cvlc` (VLC RC interface)
 - Database: SQLite (+ FTS5)
 - ReplayGain: ffmpeg PCM decode + gain math helpers
@@ -20,9 +20,9 @@ A foobar2000-inspired Linux music player built with **Tauri + Rust + React (Type
 
 ## Features in this implementation
 
-- Modern split UI with virtualized library + queue panes.
-- Debounced/paginated backend search (`offset/limit`) and FTS5 support.
-- Background scanner with progress events (`scan_progress`, `library_updated`).
+- Native GTK4 desktop window with library folder, scan, search, and playback controls.
+- SQLite-backed search (`offset/limit`) and FTS5 support.
+- Library scanning and indexing for supported audio extensions.
 - VLC controller (`cvlc --intf rc --rc-fake-tty --quiet`) with core transport commands.
 - Queue model with shuffle + repeat state.
 - ReplayGain math utilities (dB/linear conversion, clipping prevention, VLC volume mapping).
@@ -37,7 +37,7 @@ Install runtime requirements:
 - `ffmpeg`
 - Linux DBus session (for MPRIS2)
 
-Install Linux build requirements (needed for `cargo test` and Tauri builds):
+Install Linux build requirements (needed for `cargo test` and GTK4 builds):
 
 - `pkg-config`
 - GLib dev package (`glib-2.0`, `gobject-2.0`, `gio-2.0`)
@@ -50,12 +50,7 @@ sudo apt update
 sudo apt install -y \
   pkg-config \
   libglib2.0-dev \
-  libgtk-3-dev \
-  libwebkit2gtk-4.1-dev \
-  libsoup-3.0-dev \
-  libayatana-appindicator3-dev \
-  librsvg2-dev \
-  patchelf
+  libgtk-4-dev
 
 # Fedora
 sudo dnf install -y pkgconf-pkg-config glib2-devel
@@ -67,17 +62,8 @@ sudo pacman -S --needed pkgconf glib2
 ## Development
 
 ```bash
-npm install
-npm run tauri dev
-```
-
-`npm run tauri dev` already starts the Vite dev server via Tauri `beforeDevCommand`.
-Do not run `npm run dev` in a separate terminal at the same time, or port `1420` will conflict.
-
-If you only want to run the frontend (without Tauri), use:
-
-```bash
-npm run dev
+cd src-tauri
+cargo run
 ```
 
 ## Packaging notes
@@ -87,7 +73,6 @@ npm run dev
 
 ## Error handling highlights
 
-- Emits `error` event if MPRIS initialization fails.
 - Returns command errors for VLC spawn failure / DB issues.
 - Scanner continues on unreadable or malformed files.
 
