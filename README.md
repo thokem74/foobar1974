@@ -1,6 +1,7 @@
 # foobar1974
 
 A foobar2000-inspired Linux music player built with **GTK4 + Rust**.
+The UI has been migrated from Tauri/WebView to a native GTK4 window.
 
 ## Stack
 
@@ -10,6 +11,11 @@ A foobar2000-inspired Linux music player built with **GTK4 + Rust**.
 - Database: SQLite (+ FTS5)
 - ReplayGain: ffmpeg PCM decode + gain math helpers
 - Media keys: MPRIS2 (DBus bootstrap)
+
+## Repository layout
+
+- Active app code: `src-tauri/` (Rust crate with GTK4 UI and core player logic)
+- Legacy prototype code: `src/`, `index.html`, `package.json` (Tauri/React scaffold kept in-repo, not used by the GTK4 runtime)
 
 ## Storage layout
 
@@ -36,11 +42,12 @@ Install runtime requirements:
 - `vlc` (must provide `cvlc`)
 - `ffmpeg`
 - Linux DBus session (for MPRIS2)
+- GTK 4 runtime libraries
 
 Install Linux build requirements (needed for `cargo test` and GTK4 builds):
 
 - `pkg-config`
-- GLib dev package (`glib-2.0`, `gobject-2.0`, `gio-2.0`)
+- GTK4 + GLib development packages
 
 Examples:
 
@@ -53,10 +60,10 @@ sudo apt install -y \
   libgtk-4-dev
 
 # Fedora
-sudo dnf install -y pkgconf-pkg-config glib2-devel
+sudo dnf install -y pkgconf-pkg-config glib2-devel gtk4-devel
 
 # Arch
-sudo pacman -S --needed pkgconf glib2
+sudo pacman -S --needed pkgconf glib2 gtk4
 ```
 
 ## Development
@@ -65,6 +72,8 @@ sudo pacman -S --needed pkgconf glib2
 cd src-tauri
 cargo run
 ```
+
+This launches the native GTK4 desktop application directly (no Tauri CLI required).
 
 ## Packaging notes
 
