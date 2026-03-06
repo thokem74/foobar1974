@@ -4,16 +4,18 @@ A foobar2000-inspired Linux music player built with **GTK4 + Rust**.
 
 ## Stack
 
-- UI: GTK4 (native Rust)
-- Backend: Rust modules (DB/library/player state)
+- UI: GTK4 (native Rust via `gtk4` crate)
+- Backend: Rust modules (`db`, `library`, `player`, `state`, `replaygain`, `mpris`)
 - Playback: `cvlc` (VLC RC interface)
-- Database: SQLite (+ FTS5)
-- ReplayGain: ffmpeg PCM decode + gain math helpers
-- Media keys: MPRIS2 (DBus bootstrap)
+- Database: SQLite (+ FTS5) via `rusqlite`
+- ReplayGain helpers: ffmpeg PCM decode + gain math utilities
+- Media integration: MPRIS2 DBus session bootstrap
 
 ## Repository layout
 
-- Active app code: `src-tauri/` (Rust crate with GTK4 UI and core player logic)
+- Rust app crate: project root (`Cargo.toml`)
+- Application code: `src/`
+- DB migrations: `migrations/`
 
 ## Storage layout
 
@@ -30,7 +32,7 @@ A foobar2000-inspired Linux music player built with **GTK4 + Rust**.
 - VLC controller (`cvlc --intf rc --rc-fake-tty --quiet`) with core transport commands.
 - Queue model with shuffle + repeat state.
 - ReplayGain math utilities (dB/linear conversion, clipping prevention, VLC volume mapping).
-- MPRIS2 session connection bootstrap.
+- MPRIS2 session connection bootstrap scaffold.
 - Basic persistence for folders/volume/repeat/shuffle/replaygain settings.
 
 ## Dependencies
@@ -67,7 +69,6 @@ sudo pacman -S --needed pkgconf glib2 gtk4
 ## Development
 
 ```bash
-cd src-tauri
 cargo run
 ```
 
@@ -91,6 +92,5 @@ Rust unit tests are provided for:
 Run:
 
 ```bash
-cd src-tauri
 cargo test
 ```
