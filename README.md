@@ -37,6 +37,33 @@ Install runtime requirements:
 - `ffmpeg`
 - Linux DBus session (for MPRIS2)
 
+Install Linux build requirements (needed for `cargo test` and Tauri builds):
+
+- `pkg-config`
+- GLib dev package (`glib-2.0`, `gobject-2.0`, `gio-2.0`)
+
+Examples:
+
+```bash
+# Debian/Ubuntu
+sudo apt update
+sudo apt install -y \
+  pkg-config \
+  libglib2.0-dev \
+  libgtk-3-dev \
+  libwebkit2gtk-4.1-dev \
+  libsoup-3.0-dev \
+  libayatana-appindicator3-dev \
+  librsvg2-dev \
+  patchelf
+
+# Fedora
+sudo dnf install -y pkgconf-pkg-config glib2-devel
+
+# Arch
+sudo pacman -S --needed pkgconf glib2
+```
+
 ## Development
 
 ```bash

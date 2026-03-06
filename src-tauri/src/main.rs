@@ -16,7 +16,7 @@ use player::{QueueModel, VlcController};
 use rusqlite::{params, Connection};
 use serde::Serialize;
 use state::AppStateFile;
-use tauri::{Manager, State};
+use tauri::{Emitter, State};
 
 #[derive(Clone)]
 struct AppCtx {
@@ -27,7 +27,7 @@ struct AppCtx {
     app_state: Arc<Mutex<AppStateFile>>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct PlaybackNow {
     track: Option<Track>,
 }
