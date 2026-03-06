@@ -74,6 +74,7 @@ npm run dev
 In another terminal:
 
 ```bash
+# Run from project root (not src-tauri/)
 npm run tauri dev
 ```
 
