@@ -1,7 +1,6 @@
 # foobar1974
 
 A foobar2000-inspired Linux music player built with **GTK4 + Rust**.
-The UI has been migrated from Tauri/WebView to a native GTK4 window.
 
 ## Stack
 
@@ -15,7 +14,6 @@ The UI has been migrated from Tauri/WebView to a native GTK4 window.
 ## Repository layout
 
 - Active app code: `src-tauri/` (Rust crate with GTK4 UI and core player logic)
-- Legacy prototype code: `src/`, `index.html`, `package.json` (Tauri/React scaffold kept in-repo, not used by the GTK4 runtime)
 
 ## Storage layout
 
@@ -72,8 +70,6 @@ sudo pacman -S --needed pkgconf glib2 gtk4
 cd src-tauri
 cargo run
 ```
-
-This launches the native GTK4 desktop application directly (no Tauri CLI required).
 
 ## Packaging notes
 
