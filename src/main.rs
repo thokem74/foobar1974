@@ -281,7 +281,7 @@ fn build_ui(app: &Application, ctx: AppCtx) {
     left_panel.append(&metadata_grid);
 
     let album_art = Picture::for_filename("icons/icon.png");
-    album_art.set_content_fit(gtk::ContentFit::Contain);
+    album_art.set_keep_aspect_ratio(true);
     album_art.set_width_request(300);
     album_art.set_height_request(300);
     album_art.set_margin_start(8);
@@ -342,7 +342,7 @@ fn build_ui(app: &Application, ctx: AppCtx) {
     playlist_box.append(&scroll);
 
     let spectrum = Picture::for_filename("icons/icon.png");
-    spectrum.set_content_fit(gtk::ContentFit::Fill);
+    spectrum.set_keep_aspect_ratio(false);
     spectrum.set_height_request(160);
     right_panel.set_start_child(Some(&playlist_box));
     right_panel.set_end_child(Some(&spectrum));
