@@ -169,85 +169,155 @@ fn clear_listbox(listbox: &ListBox) {
 }
 
 fn build_ui(app: &Application, ctx: AppCtx) {
+    if let Some(display) = gtk::gdk::Display::default() {
+        let provider = gtk::CssProvider::new();
+        provider.load_from_data(
+            "* {
+  font-family: Segoe UI, Noto Sans, sans-serif;
+}
+window, box, paned, scrolledwindow, listbox {
+  background: #14161b;
+  color: #d9dbe0;
+}
+entry, button {
+  background: #1b1f27;
+  color: #e8ebf2;
+  border-radius: 0;
+  border: 1px solid #2f3643;
+}
+label {
+  color: #d3d6dc;
+}
+separator {
+  background: #2a303c;
+}
+",
+        );
+        gtk::style_context_add_provider_for_display(
+            &display,
+            &provider,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+    }
+
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("Igorrr - [Savage Sinusoid #02] ieuD  [foobar2000]")
-        .default_width(1100)
-        .default_height(760)
+        .title("Daft Punk - [Tron: Legacy CD1 #01] Overture  [foobar2000]")
+        .default_width(1220)
+        .default_height(780)
         .build();
 
     let root = GtkBox::new(Orientation::Vertical, 0);
 
-    let menu_row = GtkBox::new(Orientation::Horizontal, 12);
+    let menu_row = GtkBox::new(Orientation::Horizontal, 14);
     menu_row.set_margin_start(8);
     menu_row.set_margin_end(8);
     menu_row.set_margin_top(6);
-    menu_row.set_margin_bottom(6);
+    menu_row.set_margin_bottom(4);
     for item in ["File", "Edit", "View", "Playback", "Library", "Help"] {
         let lbl = Label::new(Some(item));
         lbl.set_halign(Align::Start);
         menu_row.append(&lbl);
     }
 
-    let tabs_row = GtkBox::new(Orientation::Horizontal, 12);
-    tabs_row.set_margin_start(8);
-    tabs_row.set_margin_end(8);
-    tabs_row.set_margin_top(4);
-    tabs_row.set_margin_bottom(4);
-    for tab in ["Properties", "Playlists"] {
-        tabs_row.append(&Label::new(Some(tab)));
+    let toolbar_row = GtkBox::new(Orientation::Horizontal, 8);
+    toolbar_row.set_margin_start(8);
+    toolbar_row.set_margin_end(8);
+    toolbar_row.set_margin_top(2);
+    toolbar_row.set_margin_bottom(6);
+    for icon in ["◻", "▶", "⏸", "⏮", "⏭", "⏹", "?"] {
+        let btn = Button::with_label(icon);
+        btn.set_width_request(30);
+        toolbar_row.append(&btn);
     }
-
-    let folder_row = GtkBox::new(Orientation::Horizontal, 6);
-    folder_row.set_margin_start(8);
-    folder_row.set_margin_end(8);
-    folder_row.set_margin_top(2);
-    folder_row.set_margin_bottom(4);
-    let folder_entry = Entry::builder()
-        .placeholder_text("/path/to/music folder")
-        .hexpand(true)
-        .build();
-    let add_folder_button = Button::with_label("Add");
-    let scan_button = Button::with_label("Scan");
-    folder_row.append(&folder_entry);
-    folder_row.append(&add_folder_button);
-    folder_row.append(&scan_button);
-
-    let search_row = GtkBox::new(Orientation::Horizontal, 6);
-    search_row.set_margin_start(8);
-    search_row.set_margin_end(8);
-    search_row.set_margin_bottom(4);
-    let search_entry = Entry::builder()
-        .placeholder_text("Search tracks")
-        .hexpand(true)
-        .build();
-    let search_button = Button::with_label("Search");
-    search_row.append(&search_entry);
-    search_row.append(&search_button);
 
     let split_main = Paned::new(Orientation::Horizontal);
     split_main.set_wide_handle(true);
-    split_main.set_position(330);
+    split_main.set_position(300);
 
     let left_panel = GtkBox::new(Orientation::Vertical, 0);
-    let prop_header = GtkBox::new(Orientation::Horizontal, 0);
-    prop_header.set_margin_start(8);
-    prop_header.set_margin_end(8);
-    prop_header.set_margin_top(6);
-    prop_header.set_margin_bottom(6);
-    let name_header = Label::new(Some("Name"));
-    name_header.set_hexpand(true);
-    name_header.set_halign(Align::Start);
-    let value_header = Label::new(Some("Value"));
-    value_header.set_hexpand(true);
-    value_header.set_halign(Align::Start);
-    prop_header.append(&name_header);
-    prop_header.append(&value_header);
-    left_panel.append(&prop_header);
-    left_panel.append(&Separator::new(Orientation::Horizontal));
+    let library_title = Label::new(Some("All Music (835)"));
+    library_title.set_halign(Align::Start);
+    library_title.set_margin_start(8);
+    library_title.set_margin_end(8);
+    library_title.set_margin_top(6);
+    library_title.set_margin_bottom(4);
+    left_panel.append(&library_title);
+
+    let library_list = ListBox::new();
+    for album in [
+        "> (hed) p.e. - [1997] (hed) p.e. (13)",
+        "> KMFDM - [2025] HAU RUCK 2025 (FLAC)",
+        "> Daft Punk - [2010] Tron: Legacy (30)",
+        "> Air - [1998] Moon Safari (10)",
+        "> Alexander Brandon - [2001] Deus Ex Soundtrack (30)",
+        "> The Prodigy - [1997] The Fat of the Land (15)",
+        "> Massive Attack - [1998] Mezzanine (11)",
+    ] {
+        let row = Label::new(Some(album));
+        row.set_halign(Align::Start);
+        row.set_margin_start(6);
+        row.set_margin_end(6);
+        row.set_margin_top(2);
+        row.set_margin_bottom(2);
+        library_list.append(&row);
+    }
+    let library_scroll = ScrolledWindow::builder()
+        .hexpand(true)
+        .vexpand(true)
+        .build();
+    library_scroll.set_child(Some(&library_list));
+    left_panel.append(&library_scroll);
+
+    let left_filter_row = GtkBox::new(Orientation::Horizontal, 6);
+    left_filter_row.set_margin_start(6);
+    left_filter_row.set_margin_end(6);
+    left_filter_row.set_margin_top(6);
+    left_filter_row.set_margin_bottom(6);
+    let view_entry = Entry::builder()
+        .text("by artist/album")
+        .hexpand(true)
+        .build();
+    let filter_entry = Entry::builder()
+        .placeholder_text("Filter")
+        .hexpand(true)
+        .build();
+    left_filter_row.append(&view_entry);
+    left_filter_row.append(&filter_entry);
+    left_panel.append(&left_filter_row);
+
+    let spectrum = Picture::for_filename("icons/icon.png");
+    spectrum.set_keep_aspect_ratio(false);
+    spectrum.set_height_request(130);
+    left_panel.append(&spectrum);
+
+    split_main.set_start_child(Some(&left_panel));
+
+    let right_panel = GtkBox::new(Orientation::Vertical, 0);
+
+    let top_props = Paned::new(Orientation::Horizontal);
+    top_props.set_wide_handle(true);
+    top_props.set_position(410);
+
+    let prop_col_1 = GtkBox::new(Orientation::Vertical, 0);
+    let prop_h1 = GtkBox::new(Orientation::Horizontal, 0);
+    prop_h1.set_margin_start(8);
+    prop_h1.set_margin_end(8);
+    prop_h1.set_margin_top(2);
+    prop_h1.set_margin_bottom(2);
+    let h1n = Label::new(Some("Name"));
+    let h1v = Label::new(Some("Value"));
+    h1n.set_hexpand(true);
+    h1n.set_halign(Align::Start);
+    h1v.set_hexpand(true);
+    h1v.set_halign(Align::Start);
+    prop_h1.append(&h1n);
+    prop_h1.append(&h1v);
+    prop_col_1.append(&prop_h1);
+    prop_col_1.append(&Separator::new(Orientation::Horizontal));
 
     let metadata_grid = Grid::new();
-    metadata_grid.set_column_spacing(12);
+    metadata_grid.set_column_spacing(16);
     metadata_grid.set_row_spacing(4);
     metadata_grid.set_margin_start(8);
     metadata_grid.set_margin_end(8);
@@ -255,83 +325,104 @@ fn build_ui(app: &Application, ctx: AppCtx) {
     metadata_grid.set_margin_bottom(8);
     let metadata_rows = [
         ("Metadata", ""),
-        ("Artist Name", "Igorrr"),
-        ("Track Title", "Viande"),
-        ("Album Title", "Savage Sinusoid"),
-        ("Date", "2017"),
-        ("Album Artist", "Igorrr"),
-        ("Track Number", "1"),
-        ("Total Tracks", "11"),
-        ("ReplayGain", ""),
-        ("Track gain", "-9.90 dB"),
-        ("Track peak", "1.123491"),
-        ("Album gain", "-9.38 dB"),
-        ("Album peak", "1.345638"),
+        ("Artist Name", "Daft Punk"),
+        ("Track Title", "Overture"),
+        ("Album Title", "Tron: Legacy"),
+        ("Date", "2010"),
+        ("Codec", "MP3"),
     ];
     for (idx, (key, value)) in metadata_rows.iter().enumerate() {
         let key_lbl = Label::new(Some(key));
         key_lbl.set_halign(Align::Start);
-        key_lbl.set_hexpand(true);
         let value_lbl = Label::new(Some(value));
         value_lbl.set_halign(Align::Start);
-        value_lbl.set_hexpand(true);
         metadata_grid.attach(&key_lbl, 0, idx as i32, 1, 1);
         metadata_grid.attach(&value_lbl, 1, idx as i32, 1, 1);
     }
-    left_panel.append(&metadata_grid);
+    prop_col_1.append(&metadata_grid);
 
-    let album_art = Picture::for_filename("icons/icon.png");
-    album_art.set_keep_aspect_ratio(true);
-    album_art.set_width_request(300);
-    album_art.set_height_request(300);
-    album_art.set_margin_start(8);
-    album_art.set_margin_end(8);
-    album_art.set_margin_top(8);
-    album_art.set_margin_bottom(8);
-    left_panel.append(&album_art);
+    let prop_col_2 = GtkBox::new(Orientation::Vertical, 0);
+    let prop_h2 = GtkBox::new(Orientation::Horizontal, 0);
+    prop_h2.set_margin_start(8);
+    prop_h2.set_margin_end(8);
+    prop_h2.set_margin_top(2);
+    prop_h2.set_margin_bottom(2);
+    let h2n = Label::new(Some("Name"));
+    let h2v = Label::new(Some("Value"));
+    h2n.set_hexpand(true);
+    h2n.set_halign(Align::Start);
+    h2v.set_hexpand(true);
+    h2v.set_halign(Align::Start);
+    prop_h2.append(&h2n);
+    prop_h2.append(&h2v);
+    prop_col_2.append(&prop_h2);
+    prop_col_2.append(&Separator::new(Orientation::Horizontal));
 
-    let right_panel = Paned::new(Orientation::Vertical);
-    right_panel.set_wide_handle(true);
-    right_panel.set_position(460);
+    let location_grid = Grid::new();
+    location_grid.set_column_spacing(16);
+    location_grid.set_row_spacing(4);
+    location_grid.set_margin_start(8);
+    location_grid.set_margin_end(8);
+    location_grid.set_margin_top(8);
+    location_grid.set_margin_bottom(8);
+    let location_rows = [
+        ("Location", ""),
+        ("File name", "1.01 - Overture.mp3"),
+        ("Folder name", "M:/Music/Daft Punk - Tron"),
+        ("File path", "M:/Music/Daft Punk - Tron Legacy/"),
+        ("Subsong index", "0"),
+    ];
+    for (idx, (key, value)) in location_rows.iter().enumerate() {
+        let key_lbl = Label::new(Some(key));
+        key_lbl.set_halign(Align::Start);
+        let value_lbl = Label::new(Some(value));
+        value_lbl.set_halign(Align::Start);
+        location_grid.attach(&key_lbl, 0, idx as i32, 1, 1);
+        location_grid.attach(&value_lbl, 1, idx as i32, 1, 1);
+    }
+    prop_col_2.append(&location_grid);
 
-    let playlist_box = GtkBox::new(Orientation::Vertical, 0);
-    let playlist_header = GtkBox::new(Orientation::Horizontal, 0);
+    top_props.set_start_child(Some(&prop_col_1));
+    top_props.set_end_child(Some(&prop_col_2));
+    right_panel.append(&top_props);
+
+    right_panel.append(&Separator::new(Orientation::Horizontal));
+
+    let playlist_header = GtkBox::new(Orientation::Horizontal, 8);
     playlist_header.set_margin_start(8);
     playlist_header.set_margin_end(8);
-    playlist_header.set_margin_top(6);
-    playlist_header.set_margin_bottom(6);
-    let playlist_label = Label::new(Some("Playlist:  Default"));
-    playlist_label.set_halign(Align::Start);
-    playlist_header.append(&playlist_label);
-    playlist_box.append(&playlist_header);
-    playlist_box.append(&Separator::new(Orientation::Horizontal));
+    playlist_header.set_margin_top(5);
+    playlist_header.set_margin_bottom(5);
+    playlist_header.append(&Label::new(Some("Default Playlist")));
+    right_panel.append(&playlist_header);
 
     let columns_header = GtkBox::new(Orientation::Horizontal, 8);
     columns_header.set_margin_start(8);
     columns_header.set_margin_end(8);
-    columns_header.set_margin_top(6);
-    columns_header.set_margin_bottom(6);
+    columns_header.set_margin_top(3);
+    columns_header.set_margin_bottom(5);
     for title in [
         "Playi...",
         "Artist/album",
         "Track no",
         "Title / track artist",
         "Durat...",
+        "Album cover",
     ] {
         let c = Label::new(Some(title));
         c.set_halign(Align::Start);
         c.set_hexpand(true);
         columns_header.append(&c);
     }
-    playlist_box.append(&columns_header);
-    playlist_box.append(&Separator::new(Orientation::Horizontal));
+    right_panel.append(&columns_header);
+    right_panel.append(&Separator::new(Orientation::Horizontal));
 
     let status_label = Label::new(None);
+    status_label.set_halign(Align::Start);
     status_label.set_margin_start(8);
     status_label.set_margin_end(8);
     status_label.set_margin_top(4);
     status_label.set_margin_bottom(4);
-    status_label.set_halign(Align::Start);
 
     let listbox = ListBox::new();
     let scroll = ScrolledWindow::builder()
@@ -339,44 +430,39 @@ fn build_ui(app: &Application, ctx: AppCtx) {
         .vexpand(true)
         .build();
     scroll.set_child(Some(&listbox));
-    playlist_box.append(&scroll);
+    right_panel.append(&scroll);
 
-    let spectrum = Picture::for_filename("icons/icon.png");
-    spectrum.set_keep_aspect_ratio(false);
-    spectrum.set_height_request(160);
-    right_panel.set_start_child(Some(&playlist_box));
-    right_panel.set_end_child(Some(&spectrum));
-
-    split_main.set_start_child(Some(&left_panel));
     split_main.set_end_child(Some(&right_panel));
 
-    let controls = GtkBox::new(Orientation::Horizontal, 8);
-    controls.set_margin_start(8);
-    controls.set_margin_end(8);
-    controls.set_margin_top(6);
-    controls.set_margin_bottom(6);
-    let previous_btn = Button::with_label("Previous");
-    let play_pause_btn = Button::with_label("Play/Pause");
-    let next_btn = Button::with_label("Next");
-    let stop_btn = Button::with_label("Stop");
-    let shuffle_btn = Button::with_label("Toggle Shuffle");
-    let repeat_btn = Button::with_label("Repeat All");
-    controls.append(&previous_btn);
-    controls.append(&play_pause_btn);
-    controls.append(&next_btn);
-    controls.append(&stop_btn);
-    controls.append(&shuffle_btn);
-    controls.append(&repeat_btn);
+    let search_row = GtkBox::new(Orientation::Horizontal, 6);
+    search_row.set_margin_start(8);
+    search_row.set_margin_end(8);
+    search_row.set_margin_top(6);
+    search_row.set_margin_bottom(6);
+    let folder_entry = Entry::builder()
+        .placeholder_text("/path/to/music folder")
+        .hexpand(true)
+        .build();
+    let add_folder_button = Button::with_label("Add");
+    let scan_button = Button::with_label("Scan");
+    let search_entry = Entry::builder()
+        .placeholder_text("Search tracks")
+        .hexpand(true)
+        .build();
+    let search_button = Button::with_label("Search");
+    search_row.append(&folder_entry);
+    search_row.append(&add_folder_button);
+    search_row.append(&scan_button);
+    search_row.append(&search_entry);
+    search_row.append(&search_button);
 
     root.append(&menu_row);
     root.append(&Separator::new(Orientation::Horizontal));
-    root.append(&tabs_row);
+    root.append(&toolbar_row);
     root.append(&Separator::new(Orientation::Horizontal));
-    root.append(&folder_row);
-    root.append(&search_row);
     root.append(&split_main);
+    root.append(&search_row);
     root.append(&status_label);
-    root.append(&controls);
     window.set_child(Some(&root));
 
     let ctx_add = ctx.clone();
@@ -464,64 +550,8 @@ fn build_ui(app: &Application, ctx: AppCtx) {
         }
     });
 
-    let ctx_prev = ctx.clone();
-    let status_prev = status_label.clone();
-    previous_btn.connect_clicked(move |_| match previous(&ctx_prev) {
-        Ok(()) => status_prev.set_text("Sent previous"),
-        Err(err) => status_prev.set_text(&format!("Previous failed: {err}")),
-    });
-
-    let ctx_pp = ctx.clone();
-    let status_pp = status_label.clone();
-    play_pause_btn.connect_clicked(move |_| match play_pause(&ctx_pp) {
-        Ok(()) => status_pp.set_text("Toggled play/pause"),
-        Err(err) => status_pp.set_text(&format!("Play/pause failed: {err}")),
-    });
-
-    let ctx_next = ctx.clone();
-    let status_next = status_label.clone();
-    next_btn.connect_clicked(move |_| match next(&ctx_next) {
-        Ok(()) => status_next.set_text("Sent next"),
-        Err(err) => status_next.set_text(&format!("Next failed: {err}")),
-    });
-
-    let ctx_stop = ctx.clone();
-    let status_stop = status_label.clone();
-    stop_btn.connect_clicked(move |_| match stop(&ctx_stop) {
-        Ok(()) => status_stop.set_text("Sent stop"),
-        Err(err) => status_stop.set_text(&format!("Stop failed: {err}")),
-    });
-
-    let ctx_shuffle = ctx.clone();
-    let status_shuffle = status_label.clone();
-    shuffle_btn.connect_clicked(move |_| {
-        let enabled = {
-            let q = ctx_shuffle.queue.lock();
-            match q {
-                Ok(q) => !q.shuffle,
-                Err(err) => {
-                    status_shuffle.set_text(&format!("Shuffle toggle failed: {err}"));
-                    return;
-                }
-            }
-        };
-
-        match set_shuffle(&ctx_shuffle, enabled) {
-            Ok(()) => status_shuffle.set_text(if enabled { "Shuffle on" } else { "Shuffle off" }),
-            Err(err) => status_shuffle.set_text(&format!("Shuffle toggle failed: {err}")),
-        }
-    });
-
-    let ctx_repeat = ctx.clone();
-    let status_repeat = status_label.clone();
-    repeat_btn.connect_clicked(move |_| match set_repeat_mode(&ctx_repeat, "all") {
-        Ok(()) => status_repeat.set_text("Repeat mode set: all"),
-        Err(err) => status_repeat.set_text(&format!("Repeat mode failed: {err}")),
-    });
-
-    let ctx_shutdown = ctx.clone();
     app.connect_shutdown(move |_| {
-        if let Ok(mut vlc) = ctx_shutdown.vlc.lock() {
+        if let Ok(mut vlc) = ctx.vlc.lock() {
             if let Some(controller) = vlc.as_mut() {
                 controller.shutdown();
             }
