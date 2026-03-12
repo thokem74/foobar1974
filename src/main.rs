@@ -14,7 +14,7 @@ use std::{
 use gtk::prelude::*;
 use gtk::{
     Align, Application, ApplicationWindow, Box as GtkBox, Button, Entry, Grid, Label, ListBox,
-    ListBoxRow, Orientation, Paned, Picture, ScrolledWindow, Separator,
+    ListBoxRow, Orientation, Paned, Picture, Scale, ScrolledWindow, Separator,
 };
 use gtk4 as gtk;
 use models::{RepeatMode, Track};
@@ -95,10 +95,15 @@ fn load_track_details(ctx: &AppCtx, track_id: i64) -> Result<TrackDetails, Strin
     .map_err(|e| e.to_string())
 }
 
-fn ensure_vlc(vlc: &Arc<Mutex<Option<VlcController>>>) -> Result<(), String> {
-    let mut guard = vlc.lock().map_err(|e| e.to_string())?;
+fn ensure_vlc(ctx: &AppCtx) -> Result<(), String> {
+    let mut guard = ctx.vlc.lock().map_err(|e| e.to_string())?;
     if guard.is_none() {
-        *guard = Some(VlcController::new().map_err(|e| format!("Failed to spawn cvlc: {e}"))?);
+        let mut controller = VlcController::new().map_err(|e| format!("Failed to spawn cvlc: {e}"))?;
+        let volume = ctx.app_state.lock().map_err(|e| e.to_string())?.volume;
+        controller
+            .cmd(&format!("volume {}", replaygain::vlc_volume(volume, 0.0)))
+            .map_err(|e| e.to_string())?;
+        *guard = Some(controller);
     }
     Ok(())
 }
@@ -123,7 +128,7 @@ fn enqueue_and_play(ctx: &AppCtx, track_id: i64) -> Result<(), String> {
         .map_err(|e| e.to_string())?
     };
 
-    ensure_vlc(&ctx.vlc)?;
+    ensure_vlc(ctx)?;
     {
         let mut q = ctx.queue.lock().map_err(|e| e.to_string())?;
         q.enqueue_and_play_index(track.clone());
@@ -139,7 +144,7 @@ fn enqueue_and_play(ctx: &AppCtx, track_id: i64) -> Result<(), String> {
 }
 
 fn resume(ctx: &AppCtx) -> Result<(), String> {
-    ensure_vlc(&ctx.vlc)?;
+    ensure_vlc(ctx)?;
     if let Some(v) = ctx.vlc.lock().map_err(|e| e.to_string())?.as_mut() {
         v.cmd("play").map_err(|e| e.to_string())?;
     }
@@ -147,7 +152,7 @@ fn resume(ctx: &AppCtx) -> Result<(), String> {
 }
 
 fn play_pause(ctx: &AppCtx) -> Result<(), String> {
-    ensure_vlc(&ctx.vlc)?;
+    ensure_vlc(ctx)?;
     if let Some(v) = ctx.vlc.lock().map_err(|e| e.to_string())?.as_mut() {
         v.cmd("pause").map_err(|e| e.to_string())?;
     }
@@ -155,7 +160,7 @@ fn play_pause(ctx: &AppCtx) -> Result<(), String> {
 }
 
 fn stop(ctx: &AppCtx) -> Result<(), String> {
-    ensure_vlc(&ctx.vlc)?;
+    ensure_vlc(ctx)?;
     if let Some(v) = ctx.vlc.lock().map_err(|e| e.to_string())?.as_mut() {
         v.cmd("stop").map_err(|e| e.to_string())?;
     }
@@ -163,7 +168,7 @@ fn stop(ctx: &AppCtx) -> Result<(), String> {
 }
 
 fn next(ctx: &AppCtx) -> Result<(), String> {
-    ensure_vlc(&ctx.vlc)?;
+    ensure_vlc(ctx)?;
     if let Some(v) = ctx.vlc.lock().map_err(|e| e.to_string())?.as_mut() {
         v.cmd("next").map_err(|e| e.to_string())?;
     }
@@ -171,10 +176,28 @@ fn next(ctx: &AppCtx) -> Result<(), String> {
 }
 
 fn previous(ctx: &AppCtx) -> Result<(), String> {
-    ensure_vlc(&ctx.vlc)?;
+    ensure_vlc(ctx)?;
     if let Some(v) = ctx.vlc.lock().map_err(|e| e.to_string())?.as_mut() {
         v.cmd("prev").map_err(|e| e.to_string())?;
     }
+    Ok(())
+}
+
+fn set_volume(ctx: &AppCtx, volume: u8) -> Result<(), String> {
+    {
+        let mut st = ctx.app_state.lock().map_err(|e| e.to_string())?;
+        st.volume = volume.min(100);
+        state::save(&ctx.state_path, &st).map_err(|e| e.to_string())?;
+    }
+
+    if let Some(v) = ctx.vlc.lock().map_err(|e| e.to_string())?.as_mut() {
+        v.cmd(&format!(
+            "volume {}",
+            replaygain::vlc_volume(volume.min(100), 0.0)
+        ))
+        .map_err(|e| e.to_string())?;
+    }
+
     Ok(())
 }
 
@@ -302,6 +325,19 @@ separator {
     let help_btn = Button::with_label("?");
     help_btn.set_width_request(30);
     toolbar_row.append(&help_btn);
+    let toolbar_spacer = GtkBox::new(Orientation::Horizontal, 0);
+    toolbar_spacer.set_hexpand(true);
+    toolbar_row.append(&toolbar_spacer);
+    let volume_label = Label::new(Some("Volume"));
+    volume_label.set_halign(Align::End);
+    toolbar_row.append(&volume_label);
+    let initial_volume = ctx.app_state.lock().map(|state| state.volume).unwrap_or(100);
+    let volume_scale = Scale::with_range(Orientation::Horizontal, 0.0, 100.0, 1.0);
+    volume_scale.set_width_request(140);
+    volume_scale.set_draw_value(false);
+    volume_scale.set_value(f64::from(initial_volume));
+    volume_scale.set_hexpand(false);
+    toolbar_row.append(&volume_scale);
 
     let split_main = Paned::new(Orientation::Horizontal);
     split_main.set_wide_handle(true);
@@ -615,6 +651,16 @@ separator {
     help_btn.connect_clicked(move |_| {
         status_toolbar_help
             .set_text("Select a search result, click [ ] to play it, then use transport buttons");
+    });
+
+    let ctx_volume = ctx.clone();
+    let status_volume = status_label.clone();
+    volume_scale.connect_value_changed(move |scale| {
+        let volume = scale.value().round().clamp(0.0, 100.0) as u8;
+        match set_volume(&ctx_volume, volume) {
+            Ok(()) => status_volume.set_text(&format!("Volume: {volume}%")),
+            Err(err) => status_volume.set_text(&format!("Volume change failed: {err}")),
+        }
     });
 
     let ctx_add = ctx.clone();
