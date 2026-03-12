@@ -266,11 +266,17 @@ fn artist_fallback_from_path(path: &str) -> String {
         .to_string()
 }
 
-fn refresh_library_list(ctx: &AppCtx, library_list: &ListBox, library_title: &Label) -> Result<(), String> {
+fn refresh_library_list(
+    ctx: &AppCtx,
+    library_list: &ListBox,
+    library_title: &Label,
+    filter_text: &str,
+) -> Result<(), String> {
     let rows = {
         let conn = ctx.db.lock().map_err(|e| e.to_string())?;
         db::list_library_rows(&conn).map_err(|e| e.to_string())?
     };
+    let filter_text = filter_text.trim().to_ascii_lowercase();
 
     clear_listbox(library_list);
 
@@ -286,6 +292,12 @@ fn refresh_library_list(ctx: &AppCtx, library_list: &ListBox, library_title: &La
         } else {
             row.album
         };
+        if !filter_text.is_empty() {
+            let haystack = format!("{artist} {album}").to_ascii_lowercase();
+            if !haystack.contains(&filter_text) {
+                continue;
+            }
+        }
         *groups.entry((artist, album)).or_insert(0) += 1;
     }
 
@@ -665,7 +677,7 @@ separator {
     root.append(&status_label);
     window.set_child(Some(&root));
 
-    let _ = refresh_library_list(&ctx, &library_list, &library_title);
+    let _ = refresh_library_list(&ctx, &library_list, &library_title, "");
 
     let ctx_toolbar_play_selected = ctx.clone();
     let status_toolbar_play_selected = status_label.clone();
@@ -749,13 +761,31 @@ separator {
         }
     });
 
+    let ctx_filter = ctx.clone();
+    let library_list_filter = library_list.clone();
+    let library_title_filter = library_title.clone();
+    filter_entry.connect_changed(move |entry| {
+        let _ = refresh_library_list(
+            &ctx_filter,
+            &library_list_filter,
+            &library_title_filter,
+            &entry.text(),
+        );
+    });
+
     let ctx_scan = ctx.clone();
     let status_scan = status_label.clone();
     let library_list_scan = library_list.clone();
     let library_title_scan = library_title.clone();
+    let filter_entry_scan = filter_entry.clone();
     scan_button.connect_clicked(move |_| match start_scan(&ctx_scan) {
         Ok(()) => {
-            match refresh_library_list(&ctx_scan, &library_list_scan, &library_title_scan) {
+            match refresh_library_list(
+                &ctx_scan,
+                &library_list_scan,
+                &library_title_scan,
+                &filter_entry_scan.text(),
+            ) {
                 Ok(()) => status_scan.set_text("Scan completed"),
                 Err(err) => status_scan.set_text(&format!("Scan completed, library refresh failed: {err}")),
             }
