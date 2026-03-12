@@ -7,6 +7,7 @@ mod replaygain;
 mod state;
 
 use std::{
+    collections::BTreeMap,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
@@ -244,6 +245,74 @@ fn codec_from_path(path: &str) -> String {
         .and_then(|ext| ext.to_str())
         .map(|ext| ext.to_ascii_uppercase())
         .unwrap_or_default()
+}
+
+fn album_fallback_from_path(path: &str) -> String {
+    Path::new(path)
+        .parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str())
+        .unwrap_or("Unknown album")
+        .to_string()
+}
+
+fn artist_fallback_from_path(path: &str) -> String {
+    Path::new(path)
+        .parent()
+        .and_then(|parent| parent.parent())
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str())
+        .unwrap_or("Unknown artist")
+        .to_string()
+}
+
+fn refresh_library_list(ctx: &AppCtx, library_list: &ListBox, library_title: &Label) -> Result<(), String> {
+    let rows = {
+        let conn = ctx.db.lock().map_err(|e| e.to_string())?;
+        db::list_library_rows(&conn).map_err(|e| e.to_string())?
+    };
+
+    clear_listbox(library_list);
+
+    let mut groups: BTreeMap<(String, String), usize> = BTreeMap::new();
+    for row in rows {
+        let artist = if row.artist.trim().is_empty() || row.artist == "Unknown artist" {
+            artist_fallback_from_path(&row.path)
+        } else {
+            row.artist
+        };
+        let album = if row.album.trim().is_empty() || row.album == "Unknown album" {
+            album_fallback_from_path(&row.path)
+        } else {
+            row.album
+        };
+        *groups.entry((artist, album)).or_insert(0) += 1;
+    }
+
+    if groups.is_empty() {
+        let empty_library_row = Label::new(Some("No albums loaded"));
+        empty_library_row.set_halign(Align::Start);
+        empty_library_row.set_margin_start(6);
+        empty_library_row.set_margin_end(6);
+        empty_library_row.set_margin_top(2);
+        empty_library_row.set_margin_bottom(2);
+        library_list.append(&empty_library_row);
+        library_title.set_text("All Music");
+        return Ok(());
+    }
+
+    for ((artist, album), count) in &groups {
+        let row = Label::new(Some(&format!("> {artist} - {album} ({count})")));
+        row.set_halign(Align::Start);
+        row.set_margin_start(6);
+        row.set_margin_end(6);
+        row.set_margin_top(2);
+        row.set_margin_bottom(2);
+        library_list.append(&row);
+    }
+
+    library_title.set_text(&format!("All Music ({})", groups.len()));
+    Ok(())
 }
 
 fn build_ui(app: &Application, ctx: AppCtx) {
@@ -596,6 +665,8 @@ separator {
     root.append(&status_label);
     window.set_child(Some(&root));
 
+    let _ = refresh_library_list(&ctx, &library_list, &library_title);
+
     let ctx_toolbar_play_selected = ctx.clone();
     let status_toolbar_play_selected = status_label.clone();
     let selected_track_for_play = selected_track_id.clone();
@@ -680,8 +751,15 @@ separator {
 
     let ctx_scan = ctx.clone();
     let status_scan = status_label.clone();
+    let library_list_scan = library_list.clone();
+    let library_title_scan = library_title.clone();
     scan_button.connect_clicked(move |_| match start_scan(&ctx_scan) {
-        Ok(()) => status_scan.set_text("Scan completed"),
+        Ok(()) => {
+            match refresh_library_list(&ctx_scan, &library_list_scan, &library_title_scan) {
+                Ok(()) => status_scan.set_text("Scan completed"),
+                Err(err) => status_scan.set_text(&format!("Scan completed, library refresh failed: {err}")),
+            }
+        }
         Err(err) => status_scan.set_text(&format!("Scan failed: {err}")),
     });
 

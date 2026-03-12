@@ -5,6 +5,13 @@ use rusqlite::{params, Connection};
 
 use crate::models::Track;
 
+#[derive(Debug, Clone)]
+pub struct LibraryTrackRow {
+    pub artist: String,
+    pub album: String,
+    pub path: String,
+}
+
 pub fn open_db(path: &Path) -> anyhow::Result<Connection> {
     let conn =
         Connection::open(path).with_context(|| format!("opening DB at {}", path.display()))?;
@@ -70,6 +77,23 @@ fn map_track(row: &rusqlite::Row<'_>) -> rusqlite::Result<Track> {
         album_artist: row.get(5)?,
         duration_ms: row.get(6)?,
     })
+}
+
+pub fn list_library_rows(conn: &Connection) -> anyhow::Result<Vec<LibraryTrackRow>> {
+    let mut stmt = conn.prepare(
+        "SELECT COALESCE(artist,''), COALESCE(album,''), path
+         FROM tracks
+         ORDER BY artist ASC, album ASC, path ASC",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(LibraryTrackRow {
+            artist: row.get(0)?,
+            album: row.get(1)?,
+            path: row.get(2)?,
+        })
+    })?;
+
+    Ok(rows.flatten().collect())
 }
 
 #[cfg(test)]
