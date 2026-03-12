@@ -1,6 +1,7 @@
 use std::{
     collections::VecDeque,
     io::Write,
+    path::Path,
     process::{Child, ChildStdin, Command, Stdio},
 };
 
@@ -46,7 +47,7 @@ impl VlcController {
 
     pub fn play_file(&mut self, path: &str) -> anyhow::Result<()> {
         self.cmd("clear")?;
-        self.cmd(&format!("add {}", shell_escape(path)))
+        self.cmd(&format!("add {}", file_uri(path)))
     }
 
     pub fn shutdown(&mut self) {
@@ -55,8 +56,14 @@ impl VlcController {
     }
 }
 
-fn shell_escape(path: &str) -> String {
-    format!("\"{}\"", path.replace('"', "\\\""))
+fn file_uri(path: &str) -> String {
+    let path = Path::new(path);
+    let absolute = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+    };
+    format!("file://{}", absolute.to_string_lossy().replace(' ', "%20"))
 }
 
 pub struct QueueModel {
