@@ -202,7 +202,7 @@ separator {
 
     let window = ApplicationWindow::builder()
         .application(app)
-        .title("Daft Punk - [Tron: Legacy CD1 #01] Overture  [foobar2000]")
+        .title("foobar1974")
         .default_width(1220)
         .default_height(780)
         .build();
@@ -236,7 +236,7 @@ separator {
     split_main.set_position(300);
 
     let left_panel = GtkBox::new(Orientation::Vertical, 0);
-    let library_title = Label::new(Some("All Music (835)"));
+    let library_title = Label::new(Some("All Music"));
     library_title.set_halign(Align::Start);
     library_title.set_margin_start(8);
     library_title.set_margin_end(8);
@@ -245,23 +245,13 @@ separator {
     left_panel.append(&library_title);
 
     let library_list = ListBox::new();
-    for album in [
-        "> (hed) p.e. - [1997] (hed) p.e. (13)",
-        "> KMFDM - [2025] HAU RUCK 2025 (FLAC)",
-        "> Daft Punk - [2010] Tron: Legacy (30)",
-        "> Air - [1998] Moon Safari (10)",
-        "> Alexander Brandon - [2001] Deus Ex Soundtrack (30)",
-        "> The Prodigy - [1997] The Fat of the Land (15)",
-        "> Massive Attack - [1998] Mezzanine (11)",
-    ] {
-        let row = Label::new(Some(album));
-        row.set_halign(Align::Start);
-        row.set_margin_start(6);
-        row.set_margin_end(6);
-        row.set_margin_top(2);
-        row.set_margin_bottom(2);
-        library_list.append(&row);
-    }
+    let empty_library_row = Label::new(Some("No albums loaded"));
+    empty_library_row.set_halign(Align::Start);
+    empty_library_row.set_margin_start(6);
+    empty_library_row.set_margin_end(6);
+    empty_library_row.set_margin_top(2);
+    empty_library_row.set_margin_bottom(2);
+    library_list.append(&empty_library_row);
     let library_scroll = ScrolledWindow::builder()
         .hexpand(true)
         .vexpand(true)
@@ -325,11 +315,11 @@ separator {
     metadata_grid.set_margin_bottom(8);
     let metadata_rows = [
         ("Metadata", ""),
-        ("Artist Name", "Daft Punk"),
-        ("Track Title", "Overture"),
-        ("Album Title", "Tron: Legacy"),
-        ("Date", "2010"),
-        ("Codec", "MP3"),
+        ("Artist Name", ""),
+        ("Track Title", ""),
+        ("Album Title", ""),
+        ("Date", ""),
+        ("Codec", ""),
     ];
     for (idx, (key, value)) in metadata_rows.iter().enumerate() {
         let key_lbl = Label::new(Some(key));
@@ -367,10 +357,10 @@ separator {
     location_grid.set_margin_bottom(8);
     let location_rows = [
         ("Location", ""),
-        ("File name", "1.01 - Overture.mp3"),
-        ("Folder name", "M:/Music/Daft Punk - Tron"),
-        ("File path", "M:/Music/Daft Punk - Tron Legacy/"),
-        ("Subsong index", "0"),
+        ("File name", ""),
+        ("Folder name", ""),
+        ("File path", ""),
+        ("Subsong index", ""),
     ];
     for (idx, (key, value)) in location_rows.iter().enumerate() {
         let key_lbl = Label::new(Some(key));
