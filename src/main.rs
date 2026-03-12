@@ -525,19 +525,8 @@ separator {
                     let label = Label::new(Some(&summary));
                     label.set_halign(Align::Start);
                     label.set_hexpand(true);
-                    let play_btn = Button::with_label("Play");
-                    let ctx_play = ctx_search.clone();
-                    let status_play = status_search.clone();
-                    let track_id = track.id;
-                    play_btn.connect_clicked(move |_| {
-                        match enqueue_and_play(&ctx_play, track_id) {
-                            Ok(()) => status_play.set_text("Playing selected track"),
-                            Err(err) => status_play.set_text(&format!("Playback failed: {err}")),
-                        }
-                    });
 
                     row.append(&label);
-                    row.append(&play_btn);
                     listbox_search.append(&row);
                 }
 
